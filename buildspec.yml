@@ -1,44 +1,39 @@
 version: 0.2
-
+ 
 env:
   variables:
     AWS_DEFAULT_REGION: ap-south-1
-    IMAGE_REPO_NAME: java-code
+    IMAGE_REPO_NAME: demo1
     IMAGE_TAG: latest
-    ACCOUNT_ID: 420711464341
-
+    ACCOUNT_ID: 860945038990
+    ACCOUNT_URI: 860945038990.dkr.ecr.ap-south-1.amazonaws.com
+ 
 phases:
+ 
   pre_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
-      - aws --version
-      - ACCOUNT_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo "Logging into Amazon ECR..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_URI
-
-      - echo "Setting image tag..."
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:-latest}
-
   build:
     commands:
       - echo "Build started on $(date)"
       - echo "Building the Java application..."
-      - mvn clean package -DskipTests
-
+      - mvn clean install
+ 
       - echo "Building Docker image..."
       - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-
+ 
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $ACCOUNT_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
-
+ 
   post_build:
     commands:
       - echo "Pushing Docker image to ECR..."
       - docker push $ACCOUNT_URI/$IMAGE_REPO_NAME:$IMAGE_TAG
-
+ 
       - echo "Build completed on $(date)"
       - echo "Writing image definitions file..."
       - printf '[{"name":"java-container","imageUri":"%s"}]' $ACCOUNT_URI/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
-
+ 
 artifacts:
   files:
     - imagedefinitions.json
