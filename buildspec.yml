@@ -7,6 +7,8 @@ env:
     IMAGE_TAG: latest
     ACCOUNT_ID: 860945038990
     ACCOUNT_URI: 860945038990.dkr.ecr.ap-south-1.amazonaws.com
+    ECS_CLUSTER: Java_application_01
+    ECS_SERVICE: Java_code-service-apu75gyi
  
 phases:
  
@@ -33,7 +35,11 @@ phases:
       - echo "Build completed on $(date)"
       - echo "Writing image definitions file..."
       - printf '[{"name":"java-container","imageUri":"%s"}]' $ACCOUNT_URI/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
+      - echo "Triggering ECS deployment..."
+      - aws ecs update-service -cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+      - echo "Deployment completed on $(date)"
  
 artifacts:
   files:
     - imagedefinitions.json
+   
